@@ -7,7 +7,7 @@ import Button from "../components/Button";
 import TextField from "../components/TextField";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import { UserPlus } from "lucide-react";
+import { UserPlus, CheckCircle } from "lucide-react";
 import { createClient } from "../../lib/supabase/client";
 
 function RegisterForm() {
@@ -28,6 +28,7 @@ function RegisterForm() {
     confirmPassword?: string;
   }>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -79,6 +80,7 @@ function RegisterForm() {
           data: {
             name: formData.name,
           },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
@@ -93,9 +95,25 @@ function RegisterForm() {
       }
 
       if (data.user) {
-        // Redirect to the intended page or dashboard
-        router.push(redirect);
-        router.refresh();
+        // Check if user is automatically logged in (email confirmation disabled)
+        if (data.session) {
+          // User is logged in - redirect to dashboard
+          router.push(redirect);
+          router.refresh();
+        } else {
+          // Email confirmation required - show success message
+          setIsSuccess(true);
+          setFormData({
+            name: "",
+            email: "",
+            password: "",
+            confirmPassword: "",
+          });
+          // Redirect to login after 5 seconds
+          setTimeout(() => {
+            router.push("/login");
+          }, 5000);
+        }
       }
     } catch (error) {
       setErrors({ email: "An error occurred. Please try again." });
@@ -103,6 +121,39 @@ function RegisterForm() {
       setIsLoading(false);
     }
   };
+
+  if (isSuccess) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col">
+        <Header />
+        <div className="flex-1 flex items-center justify-center px-4 py-12">
+          <div className="w-full max-w-md">
+            <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-8 h-8 text-green-600" />
+              </div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Registration Successful!
+              </h1>
+              <p className="text-gray-600 mb-6">
+                Please check your email to verify your account before signing
+                in.
+              </p>
+              <p className="text-sm text-gray-500 mb-6">
+                You will be redirected to the login page in a few seconds...
+              </p>
+              <Link href="/login">
+                <Button variant="primary" className="w-full">
+                  Go to Login
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col">

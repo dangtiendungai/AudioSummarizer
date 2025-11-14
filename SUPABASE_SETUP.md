@@ -31,8 +31,9 @@ Replace `your_supabase_project_url` and `your_supabase_anon_key` with the values
 1. In your Supabase dashboard, go to **Authentication** → **URL Configuration**
 2. Add your site URL (e.g., `http://localhost:3000` for development)
 3. Add redirect URLs:
-   - `http://localhost:3000/reset-password` (for development)
-   - Your production URL + `/reset-password` (for production)
+   - `http://localhost:3000/auth/callback` (for email confirmation)
+   - `http://localhost:3000/reset-password` (for password reset)
+   - Your production URLs with the same paths (for production)
 
 ## 5. Enable Email Authentication
 
