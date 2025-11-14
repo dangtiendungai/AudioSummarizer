@@ -6,7 +6,6 @@ import {
   FileText,
   Upload,
   History,
-  Settings,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -23,7 +22,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <Link href="/summarize">
           <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer border border-gray-200">
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
@@ -57,16 +56,6 @@ export default function DashboardPage() {
           </h3>
           <p className="text-sm text-gray-600">
             Browse all your saved transcripts
-          </p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer border border-gray-200">
-          <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
-            <Settings className="w-6 h-6 text-yellow-600" />
-          </div>
-          <h3 className="text-lg font-bold text-gray-900 mb-2">Settings</h3>
-          <p className="text-sm text-gray-600">
-            Manage your account preferences
           </p>
         </div>
       </div>
