@@ -17,9 +17,9 @@ export default function Button({
   const baseStyles = "px-6 py-3 rounded-lg font-medium transition-all cursor-pointer disabled:cursor-not-allowed";
   
   const variantStyles = {
-    primary: "bg-blue-600 text-white hover:bg-blue-700 active:scale-95 disabled:bg-gray-300 disabled:text-gray-500",
+    primary: "border border-blue-600 bg-blue-600 text-white hover:bg-blue-700 active:scale-95 disabled:bg-gray-300 disabled:text-gray-500",
     secondary: "border border-gray-300 text-gray-700 hover:bg-gray-50 active:scale-95 disabled:border-gray-200 disabled:text-gray-400",
-    danger: "bg-red-600 text-white hover:bg-red-700 active:scale-95 disabled:bg-gray-300 disabled:text-gray-500",
+    danger: "border border-red-600 bg-red-600 text-white hover:bg-red-700 active:scale-95 disabled:bg-gray-300 disabled:text-gray-500",
   };
 
   return (

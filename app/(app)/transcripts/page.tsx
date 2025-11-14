@@ -114,36 +114,24 @@ export default function TranscriptsPage() {
             />
           </div>
           <div className="flex gap-2">
-            <button
+            <Button
               onClick={() => setFilter("all")}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                filter === "all"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
+              variant={filter === "all" ? "primary" : "secondary"}
             >
               All
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setFilter("audio")}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                filter === "audio"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
+              variant={filter === "audio" ? "primary" : "secondary"}
             >
               Audio
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setFilter("youtube")}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                filter === "youtube"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
+              variant={filter === "youtube" ? "primary" : "secondary"}
             >
               YouTube
-            </button>
+            </Button>
           </div>
         </div>
       </div>
