@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import Button from "./components/Button";
+import TextField from "./components/TextField";
 
 type ProcessingState = "idle" | "uploading" | "transcribing" | "summarizing" | "complete" | "error";
 
@@ -201,15 +203,12 @@ export default function Home() {
 
           {/* YouTube URL Input */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              YouTube URL
-            </label>
-            <input
+            <TextField
               type="url"
+              label="YouTube URL"
               value={youtubeUrl}
               onChange={handleYoutubeUrlChange}
               placeholder="https://www.youtube.com/watch?v=..."
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
             />
           </div>
 
@@ -222,14 +221,11 @@ export default function Home() {
 
           {/* Action Buttons */}
           <div className="flex gap-3">
-            <button
+            <Button
               onClick={handleSubmit}
               disabled={processingState !== "idle" && processingState !== "error"}
-              className={`flex-1 px-6 py-3 rounded-lg font-medium transition-all ${
-                processingState !== "idle" && processingState !== "error"
-                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  : "bg-blue-600 text-white hover:bg-blue-700 active:scale-95"
-              }`}
+              isLoading={processingState === "uploading" || processingState === "transcribing" || processingState === "summarizing"}
+              className="flex-1"
             >
               {processingState === "idle" && "Process Audio"}
               {processingState === "uploading" && "Uploading..."}
@@ -237,14 +233,14 @@ export default function Home() {
               {processingState === "summarizing" && "Generating Summary..."}
               {processingState === "complete" && "Process Complete"}
               {processingState === "error" && "Try Again"}
-            </button>
+            </Button>
             {(file || youtubeUrl || summaryData) && (
-              <button
+              <Button
                 onClick={handleReset}
-                className="px-6 py-3 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 active:scale-95 transition-all"
+                variant="secondary"
               >
                 Reset
-              </button>
+              </Button>
             )}
           </div>
         </div>
