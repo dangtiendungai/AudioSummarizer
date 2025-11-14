@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Sidebar from "../components/Sidebar";
+import { createClient } from "../../lib/supabase/client";
 
 export default function AppLayout({
   children,
@@ -18,18 +19,26 @@ export default function AppLayout({
   );
 
   useEffect(() => {
-    // Check if user is authenticated
-    const authToken = localStorage.getItem("authToken");
-    const userData = localStorage.getItem("user");
+    const checkAuth = async () => {
+      const supabase = createClient();
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
 
-    if (authToken && userData) {
-      setIsAuthenticated(true);
-      setUser(JSON.parse(userData));
-    } else {
-      setIsAuthenticated(false);
-      router.push("/login?redirect=" + pathname);
-    }
-    setIsChecking(false);
+      if (authUser) {
+        setIsAuthenticated(true);
+        setUser({
+          email: authUser.email || "",
+          name: (authUser.user_metadata?.name as string) || authUser.email?.split("@")[0] || "User",
+        });
+      } else {
+        setIsAuthenticated(false);
+        router.push("/login?redirect=" + pathname);
+      }
+      setIsChecking(false);
+    };
+
+    checkAuth();
   }, [router, pathname]);
 
   if (isChecking) {

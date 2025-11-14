@@ -7,6 +7,7 @@ import TextField from "../components/TextField";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { Mail, ArrowLeft, CheckCircle } from "lucide-react";
+import { createClient } from "../../lib/supabase/client";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -31,9 +32,19 @@ export default function ForgotPasswordPage() {
       return;
     }
 
-    // TODO: Replace with actual API call
+    // Supabase password reset
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const supabase = createClient();
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) {
+        setError(error.message || "Something went wrong. Please try again.");
+        setIsLoading(false);
+        return;
+      }
+
       setIsSubmitted(true);
     } catch (error) {
       setError("Something went wrong. Please try again.");

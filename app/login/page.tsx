@@ -8,6 +8,7 @@ import TextField from "../components/TextField";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { LogIn } from "lucide-react";
+import { createClient } from "../../lib/supabase/client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -43,19 +44,27 @@ export default function LoginPage() {
       return;
     }
 
-    // TODO: Replace with actual Supabase API call
+    // Supabase authentication
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      // Simulate successful login - store auth token
-      localStorage.setItem("authToken", "mock-token-" + Date.now());
-      localStorage.setItem(
-        "user",
-        JSON.stringify({ email, name: email.split("@")[0] })
-      );
-      // Redirect to the intended page or summarize
-      router.push(redirect);
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setErrors({ email: error.message || "Invalid email or password" });
+        setIsLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        // Redirect to the intended page or dashboard
+        router.push(redirect);
+        router.refresh();
+      }
     } catch (error) {
-      setErrors({ email: "Invalid email or password" });
+      setErrors({ email: "An error occurred. Please try again." });
     } finally {
       setIsLoading(false);
     }

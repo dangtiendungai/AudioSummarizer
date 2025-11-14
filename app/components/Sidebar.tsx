@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Upload,
@@ -10,7 +10,7 @@ import {
   LogOut,
   User,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { createClient } from "../../lib/supabase/client";
 
 interface SidebarProps {
   user: { email: string; name: string } | null;
@@ -20,10 +20,11 @@ export default function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const handleLogout = () => {
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("user");
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
     router.push("/");
+    router.refresh();
   };
 
   const navItems = [

@@ -8,6 +8,7 @@ import TextField from "../components/TextField";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { UserPlus } from "lucide-react";
+import { createClient } from "../../lib/supabase/client";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -68,19 +69,36 @@ export default function RegisterPage() {
       return;
     }
 
-    // TODO: Replace with actual Supabase API call
+    // Supabase authentication
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      // Simulate successful registration - store auth token
-      localStorage.setItem("authToken", "mock-token-" + Date.now());
-      localStorage.setItem(
-        "user",
-        JSON.stringify({ email: formData.email, name: formData.name })
-      );
-      // Redirect to the intended page or summarize
-      router.push(redirect);
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            name: formData.name,
+          },
+        },
+      });
+
+      if (error) {
+        if (error.message.includes("already registered")) {
+          setErrors({ email: "This email is already registered" });
+        } else {
+          setErrors({ email: error.message || "Registration failed" });
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        // Redirect to the intended page or dashboard
+        router.push(redirect);
+        router.refresh();
+      }
     } catch (error) {
-      setErrors({ email: "This email is already registered" });
+      setErrors({ email: "An error occurred. Please try again." });
     } finally {
       setIsLoading(false);
     }
