@@ -5,11 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Sidebar from "../components/Sidebar";
 import { createClient } from "../../lib/supabase/client";
 
-export default function AppLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -20,22 +16,32 @@ export default function AppLayout({
 
   useEffect(() => {
     const checkAuth = async () => {
-      const supabase = createClient();
-      const {
-        data: { user: authUser },
-      } = await supabase.auth.getUser();
+      try {
+        const supabase = createClient();
+        const {
+          data: { user: authUser },
+        } = await supabase.auth.getUser();
 
-      if (authUser) {
-        setIsAuthenticated(true);
-        setUser({
-          email: authUser.email || "",
-          name: (authUser.user_metadata?.name as string) || authUser.email?.split("@")[0] || "User",
-        });
-      } else {
+        if (authUser) {
+          setIsAuthenticated(true);
+          setUser({
+            email: authUser.email || "",
+            name:
+              (authUser.user_metadata?.name as string) ||
+              authUser.email?.split("@")[0] ||
+              "User",
+          });
+        } else {
+          setIsAuthenticated(false);
+          router.push("/login?redirect=" + pathname);
+        }
+      } catch (error) {
+        // Supabase not configured - redirect to login
         setIsAuthenticated(false);
         router.push("/login?redirect=" + pathname);
+      } finally {
+        setIsChecking(false);
       }
-      setIsChecking(false);
     };
 
     checkAuth();
@@ -65,4 +71,3 @@ export default function AppLayout({
     </div>
   );
 }
-

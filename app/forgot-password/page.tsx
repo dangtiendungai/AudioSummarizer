@@ -6,7 +6,7 @@ import Button from "../components/Button";
 import TextField from "../components/TextField";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import { Mail, ArrowLeft, CheckCircle } from "lucide-react";
+import { Mail, CheckCircle } from "lucide-react";
 import { createClient } from "../../lib/supabase/client";
 
 export default function ForgotPasswordPage() {
@@ -140,7 +140,7 @@ export default function ForgotPasswordPage() {
                 href="/login"
                 className="text-blue-600 hover:text-blue-700 font-medium text-sm"
               >
-                ← Back to Login
+                Back to Login
               </Link>
             </div>
           </div>

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Button from "../components/Button";
 import TextField from "../components/TextField";
@@ -10,9 +10,8 @@ import Footer from "../components/Footer";
 import { Lock, CheckCircle } from "lucide-react";
 import { createClient } from "../../lib/supabase/client";
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<{
@@ -95,7 +94,8 @@ export default function ResetPasswordPage() {
                 Password Reset Successful
               </h1>
               <p className="text-gray-600 mb-6">
-                Your password has been successfully updated. You can now sign in with your new password.
+                Your password has been successfully updated. You can now sign in
+                with your new password.
               </p>
               <Link href="/login" className="block">
                 <Button variant="primary" className="w-full">
@@ -124,9 +124,7 @@ export default function ResetPasswordPage() {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 Reset Password
               </h1>
-              <p className="text-gray-600">
-                Enter your new password below
-              </p>
+              <p className="text-gray-600">Enter your new password below</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -177,3 +175,19 @@ export default function ResetPasswordPage() {
   );
 }
 
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      }
+    >
+      <ResetPasswordForm />
+    </Suspense>
+  );
+}

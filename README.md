@@ -1,24 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Audio Summarizer AI
+
+A Next.js application that transcribes audio files and YouTube videos, then generates AI-powered summaries, notes, and action items. Built with Next.js 16, Supabase, and Tailwind CSS.
+
+## Features
+
+- 🎤 **Audio Transcription**: Upload MP3/WAV files or paste YouTube links
+- 📝 **AI Summarization**: Generate short summaries, bullet-point notes, and action items
+- 💬 **RAG Chat**: Chat with your transcripts using Retrieval Augmented Generation
+- 🔐 **Authentication**: Secure user authentication with Supabase
+- 📊 **Dashboard**: Track your summaries and transcripts
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Node.js 18+ and npm/yarn/pnpm
+- A Supabase account (free tier works)
+
+### Installation
+
+1. **Clone the repository** (or navigate to the project directory)
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**:
+   
+   Create a `.env.local` file in the root directory:
+   ```bash
+   cp .env.example .env.local
+   ```
+   
+   Then edit `.env.local` and add your Supabase credentials:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
+   
+   To get these values:
+   1. Go to [Supabase Dashboard](https://app.supabase.com)
+   2. Create a new project or select an existing one
+   3. Go to **Settings** → **API**
+   4. Copy the **Project URL** and **anon/public** key
+
+4. **Run the development server**:
+   ```bash
+   npm run dev
+   ```
+
+5. **Open [http://localhost:3000](http://localhost:3000)** in your browser
+
+## Project Structure
+
+```
+├── app/
+│   ├── (app)/              # Protected routes (dashboard, summarize, etc.)
+│   ├── components/         # Reusable UI components
+│   ├── login/             # Authentication pages
+│   ├── register/
+│   └── forgot-password/
+├── lib/
+│   └── supabase/          # Supabase client configuration
+└── middleware.ts          # Next.js middleware for session management
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Tech Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Framework**: Next.js 16 (App Router)
+- **Styling**: Tailwind CSS 4
+- **Authentication**: Supabase Auth
+- **Icons**: Lucide React
+- **Font**: Sarala (Google Fonts)
 
 ## Learn More
 

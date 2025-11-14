@@ -11,23 +11,57 @@ export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<{ email: string; name: string } | null>(null);
+  const [user, setUser] = useState<{ email: string; name: string } | null>(
+    null
+  );
 
   useEffect(() => {
-    const supabase = createClient();
+    let subscription: { unsubscribe: () => void } | null = null;
 
     const checkAuth = async () => {
-      const {
-        data: { user: authUser },
-      } = await supabase.auth.getUser();
+      try {
+        const supabase = createClient();
 
-      if (authUser) {
-        setIsAuthenticated(true);
-        setUser({
-          email: authUser.email || "",
-          name: (authUser.user_metadata?.name as string) || authUser.email?.split("@")[0] || "User",
+        const {
+          data: { user: authUser },
+        } = await supabase.auth.getUser();
+
+        if (authUser) {
+          setIsAuthenticated(true);
+          setUser({
+            email: authUser.email || "",
+            name:
+              (authUser.user_metadata?.name as string) ||
+              authUser.email?.split("@")[0] ||
+              "User",
+          });
+        } else {
+          setIsAuthenticated(false);
+          setUser(null);
+        }
+
+        // Listen for auth changes
+        const {
+          data: { subscription: authSubscription },
+        } = supabase.auth.onAuthStateChange((_event, session) => {
+          if (session?.user) {
+            setIsAuthenticated(true);
+            setUser({
+              email: session.user.email || "",
+              name:
+                (session.user.user_metadata?.name as string) ||
+                session.user.email?.split("@")[0] ||
+                "User",
+            });
+          } else {
+            setIsAuthenticated(false);
+            setUser(null);
+          }
         });
-      } else {
+
+        subscription = authSubscription;
+      } catch (error) {
+        // Supabase not configured - app will work without auth
         setIsAuthenticated(false);
         setUser(null);
       }
@@ -35,40 +69,25 @@ export default function Header() {
 
     checkAuth();
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setIsAuthenticated(true);
-        setUser({
-          email: session.user.email || "",
-          name: (session.user.user_metadata?.name as string) || session.user.email?.split("@")[0] || "User",
-        });
-      } else {
-        setIsAuthenticated(false);
-        setUser(null);
-      }
-    });
-
     return () => {
-      subscription.unsubscribe();
+      if (subscription) {
+        subscription.unsubscribe();
+      }
     };
   }, [pathname]);
 
   const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+    } catch (error) {
+      // Supabase not configured
+    }
     setIsAuthenticated(false);
     setUser(null);
     router.push("/");
     router.refresh();
   };
-
-  const isAuthPage =
-    pathname?.startsWith("/login") ||
-    pathname?.startsWith("/register") ||
-    pathname?.startsWith("/forgot-password");
 
   return (
     <header className="border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
@@ -82,18 +101,16 @@ export default function Header() {
           </Link>
 
           <div className="flex items-center gap-4">
-            {isAuthPage ? (
-              <Link href="/">
-                <Button variant="secondary">Back to Home</Button>
-              </Link>
-            ) : isAuthenticated ? (
+            {isAuthenticated ? (
               <>
                 <Link href="/dashboard">
                   <Button variant="secondary">Dashboard</Button>
                 </Link>
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100">
                   <User className="w-4 h-4 text-gray-600" />
-                  <span className="text-sm text-gray-700">{user?.name || "User"}</span>
+                  <span className="text-sm text-gray-700">
+                    {user?.name || "User"}
+                  </span>
                 </div>
                 <Button variant="secondary" onClick={handleLogout}>
                   <LogOut className="w-4 h-4 mr-2" />
