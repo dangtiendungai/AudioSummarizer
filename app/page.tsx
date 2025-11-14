@@ -1,374 +1,303 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import Link from "next/link";
 import Button from "./components/Button";
-import TextField from "./components/TextField";
-
-type ProcessingState = "idle" | "uploading" | "transcribing" | "summarizing" | "complete" | "error";
-
-interface SummaryData {
-  transcript: string;
-  summary: string;
-  bulletPoints: string[];
-  actionItems: string[];
-  duration?: number;
-}
 
 export default function Home() {
-  const [file, setFile] = useState<File | null>(null);
-  const [youtubeUrl, setYoutubeUrl] = useState("");
-  const [processingState, setProcessingState] = useState<ProcessingState>("idle");
-  const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [dragActive, setDragActive] = useState(false);
-
-  const handleDrag = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const droppedFile = e.dataTransfer.files[0];
-      if (droppedFile.type.startsWith("audio/") || droppedFile.name.match(/\.(mp3|wav|m4a|ogg)$/i)) {
-        setFile(droppedFile);
-        setYoutubeUrl("");
-        setError(null);
-      } else {
-        setError("Please upload a valid audio file (MP3, WAV, M4A, OGG)");
-      }
-    }
-  }, []);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
-      setYoutubeUrl("");
-      setError(null);
-    }
-  };
-
-  const handleYoutubeUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setYoutubeUrl(e.target.value);
-    if (e.target.value) {
-      setFile(null);
-      setError(null);
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!file && !youtubeUrl.trim()) {
-      setError("Please upload an audio file or enter a YouTube URL");
-      return;
-    }
-
-    setError(null);
-    setProcessingState("uploading");
-    setSummaryData(null);
-
-    try {
-      // TODO: Replace with actual API calls
-      // For now, simulate processing
-      setProcessingState("transcribing");
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      setProcessingState("summarizing");
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Mock data for UI preview
-      setSummaryData({
-        transcript: "This is a sample transcript. In a real implementation, this would contain the actual transcribed text from the audio file or YouTube video.",
-        summary: "This is a sample summary of the audio content. It provides a concise overview of the main topics discussed.",
-        bulletPoints: [
-          "Key point one: Important information about the topic",
-          "Key point two: Another significant detail mentioned",
-          "Key point three: Additional insights from the discussion",
-        ],
-        actionItems: [
-          "Follow up on the discussed proposal",
-          "Schedule a meeting with the team",
-          "Review the documents mentioned",
-        ],
-        duration: 120,
-      });
-
-      setProcessingState("complete");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-      setProcessingState("error");
-    }
-  };
-
-  const handleReset = () => {
-    setFile(null);
-    setYoutubeUrl("");
-    setSummaryData(null);
-    setProcessingState("idle");
-    setError(null);
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+      {/* Navigation */}
+      <nav className="container mx-auto px-4 py-6 max-w-7xl">
+        <div className="flex items-center justify-between">
+          <div className="text-2xl font-bold text-gray-900">
             Audio Summarizer AI
+          </div>
+          <Link href="/summarize">
+            <Button variant="primary">Get Started</Button>
+          </Link>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <section className="container mx-auto px-4 py-20 max-w-7xl">
+        <div className="text-center max-w-4xl mx-auto">
+          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+            Transform Audio into
+            <span className="text-blue-600"> Actionable Insights</span>
           </h1>
-          <p className="text-lg text-gray-600">
-            Upload audio files or paste YouTube links to get AI-powered transcripts, summaries, and action items
+          <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+            Upload audio files or YouTube videos and get instant AI-powered
+            transcripts, summaries, key points, and action items. Save hours of
+            note-taking time.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/summarize">
+              <Button variant="primary" className="text-lg px-8 py-4">
+                Start Summarizing
+              </Button>
+            </Link>
+            <Button variant="secondary" className="text-lg px-8 py-4">
+              Watch Demo
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="container mx-auto px-4 py-20 max-w-7xl">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            Powerful Features
+          </h2>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Everything you need to extract value from your audio content
           </p>
         </div>
 
-        {/* Input Section */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          {/* File Upload Area */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Upload Audio File
-            </label>
-            <div
-              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                dragActive
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-300 hover:border-gray-400"
-              }`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-            >
-              <input
-                type="file"
-                accept="audio/*,.mp3,.wav,.m4a,.ogg"
-                onChange={handleFileChange}
-                className="hidden"
-                id="audio-upload"
-              />
-              <label
-                htmlFor="audio-upload"
-                className="cursor-pointer flex flex-col items-center"
+        <div className="grid md:grid-cols-3 gap-8">
+          {/* Feature 1 */}
+          <div className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow">
+            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+              <svg
+                className="w-6 h-6 text-blue-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                <svg
-                  className="w-12 h-12 text-gray-400 mb-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                  />
-                </svg>
-                <p className="text-gray-600 mb-2">
-                  <span className="text-blue-600 font-medium">Click to upload</span> or drag and drop
-                </p>
-                <p className="text-sm text-gray-500">
-                  MP3, WAV, M4A, OGG (max 100MB)
-                </p>
-              </label>
-              {file && (
-                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-gray-700">
-                    <span className="font-medium">Selected:</span> {file.name}
-                    <span className="text-gray-500 ml-2">
-                      ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                    </span>
-                  </p>
-                </div>
-              )}
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
+                />
+              </svg>
             </div>
-          </div>
-
-          {/* Divider */}
-          <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-500">OR</span>
-            </div>
-          </div>
-
-          {/* YouTube URL Input */}
-          <div className="mb-6">
-            <TextField
-              type="url"
-              label="YouTube URL"
-              value={youtubeUrl}
-              onChange={handleYoutubeUrlChange}
-              placeholder="https://www.youtube.com/watch?v=..."
-            />
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600">{error}</p>
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex gap-3">
-            <Button
-              onClick={handleSubmit}
-              disabled={processingState !== "idle" && processingState !== "error"}
-              isLoading={processingState === "uploading" || processingState === "transcribing" || processingState === "summarizing"}
-              className="flex-1"
-            >
-              {processingState === "idle" && "Process Audio"}
-              {processingState === "uploading" && "Uploading..."}
-              {processingState === "transcribing" && "Transcribing..."}
-              {processingState === "summarizing" && "Generating Summary..."}
-              {processingState === "complete" && "Process Complete"}
-              {processingState === "error" && "Try Again"}
-            </Button>
-            {(file || youtubeUrl || summaryData) && (
-              <Button
-                onClick={handleReset}
-                variant="secondary"
-              >
-                Reset
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* Results Section */}
-        {summaryData && (
-          <div className="space-y-6">
-            {/* Summary Card */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <svg
-                  className="w-6 h-6 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-                Summary
-              </h2>
-              <p className="text-gray-700 leading-relaxed">{summaryData.summary}</p>
-              {summaryData.duration && (
-                <p className="text-sm text-gray-500 mt-3">
-                  Duration: {Math.floor(summaryData.duration / 60)}:{(summaryData.duration % 60).toString().padStart(2, "0")}
-                </p>
-              )}
-            </div>
-
-            {/* Bullet Points Card */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <svg
-                  className="w-6 h-6 text-purple-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-                  />
-                </svg>
-                Key Points
-              </h2>
-              <ul className="space-y-2">
-                {summaryData.bulletPoints.map((point, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <span className="text-purple-600 mt-1">•</span>
-                    <span className="text-gray-700 flex-1">{point}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Action Items Card */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <svg
-                  className="w-6 h-6 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-                  />
-                </svg>
-                Action Items
-              </h2>
-              <ul className="space-y-2">
-                {summaryData.actionItems.map((item, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <span className="text-green-600 mt-1">✓</span>
-                    <span className="text-gray-700 flex-1">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Transcript Card */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <svg
-                  className="w-6 h-6 text-gray-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-                  />
-                </svg>
-                Full Transcript
-              </h2>
-              <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
-                <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                  {summaryData.transcript}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Processing Indicator */}
-        {processingState !== "idle" && processingState !== "complete" && processingState !== "error" && (
-          <div className="bg-white rounded-xl shadow-lg p-6 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+            <h3 className="text-xl font-bold text-gray-900 mb-3">
+              Audio Transcription
+            </h3>
             <p className="text-gray-600">
-              {processingState === "uploading" && "Uploading your audio file..."}
-              {processingState === "transcribing" && "Transcribing audio to text..."}
-              {processingState === "summarizing" && "Generating AI summary..."}
+              Upload MP3, WAV, or other audio formats. Support for YouTube links
+              coming soon. Powered by advanced speech recognition technology.
             </p>
           </div>
-        )}
-      </div>
+
+          {/* Feature 2 */}
+          <div className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow">
+            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+              <svg
+                className="w-6 h-6 text-purple-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-3">
+              AI Summarization
+            </h3>
+            <p className="text-gray-600">
+              Get concise summaries that capture the essence of your content.
+              Perfect for quickly understanding long meetings or lectures.
+            </p>
+          </div>
+
+          {/* Feature 3 */}
+          <div className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow">
+            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+              <svg
+                className="w-6 h-6 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-3">
+              Action Items
+            </h3>
+            <p className="text-gray-600">
+              Automatically extract actionable tasks and key decisions from your
+              audio. Never miss important follow-ups again.
+            </p>
+          </div>
+
+          {/* Feature 4 */}
+          <div className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow">
+            <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
+              <svg
+                className="w-6 h-6 text-yellow-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-3">
+              Full Transcripts
+            </h3>
+            <p className="text-gray-600">
+              Access complete, searchable transcripts of your audio. Perfect for
+              reference and detailed analysis.
+            </p>
+          </div>
+
+          {/* Feature 5 */}
+          <div className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow">
+            <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
+              <svg
+                className="w-6 h-6 text-indigo-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-3">
+              Fast Processing
+            </h3>
+            <p className="text-gray-600">
+              Get results in minutes, not hours. Our optimized pipeline
+              processes audio quickly while maintaining accuracy.
+            </p>
+          </div>
+
+          {/* Feature 6 */}
+          <div className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow">
+            <div className="w-12 h-12 bg-pink-100 rounded-lg flex items-center justify-center mb-4">
+              <svg
+                className="w-6 h-6 text-pink-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-3">
+              Smart RAG (Coming Soon)
+            </h3>
+            <p className="text-gray-600">
+              Chat with your transcripts using AI. Ask questions and get instant
+              answers from your stored audio content.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works Section */}
+      <section className="container mx-auto px-4 py-20 max-w-7xl">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            How It Works
+          </h2>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Three simple steps to transform your audio into insights
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          {/* Step 1 */}
+          <div className="text-center">
+            <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+              1
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-3">
+              Upload Audio
+            </h3>
+            <p className="text-gray-600">
+              Upload your audio file (MP3, WAV, M4A, OGG) or paste a YouTube
+              URL. We support various audio formats.
+            </p>
+          </div>
+
+          {/* Step 2 */}
+          <div className="text-center">
+            <div className="w-16 h-16 bg-purple-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+              2
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-3">
+              AI Processing
+            </h3>
+            <p className="text-gray-600">
+              Our AI transcribes your audio using advanced speech recognition,
+              then generates summaries and extracts key insights.
+            </p>
+          </div>
+
+          {/* Step 3 */}
+          <div className="text-center">
+            <div className="w-16 h-16 bg-green-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+              3
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-3">
+              Get Results
+            </h3>
+            <p className="text-gray-600">
+              Receive your transcript, summary, bullet points, and action items.
+              All ready to use and share.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="container mx-auto px-4 py-20 max-w-7xl">
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-12 text-center text-white">
+          <h2 className="text-4xl font-bold mb-4">Ready to Get Started?</h2>
+          <p className="text-xl mb-8 text-blue-100">
+            Transform your audio content into actionable insights today
+          </p>
+          <Link href="/summarize">
+            <Button
+              variant="secondary"
+              className="bg-white text-blue-600 hover:bg-gray-100 text-lg px-8 py-4"
+            >
+              Start Summarizing Now
+            </Button>
+          </Link>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="container mx-auto px-4 py-12 max-w-7xl border-t border-gray-200">
+        <div className="text-center text-gray-600">
+          <p className="mb-2">
+            © 2024 Audio Summarizer AI. All rights reserved.
+          </p>
+          <p className="text-sm">
+            Powered by OpenAI Whisper and advanced LLM technology
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

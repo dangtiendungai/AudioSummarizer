@@ -14,7 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Audio Summarizer AI",
-  description: "Transcribe audio files and YouTube videos, then get AI-powered summaries, notes, and action items",
+  description:
+    "Transcribe audio files and YouTube videos, then get AI-powered summaries, notes, and action items",
 };
 
 export default function RootLayout({
