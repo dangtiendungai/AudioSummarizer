@@ -55,7 +55,7 @@ export default function SummarizePage() {
       setIsAuthenticated(false);
       // Redirect to login after a brief delay
       setTimeout(() => {
-        router.push("/login?redirect=/summarize");
+        router.push("/login?redirect=/dashboard");
       }, 100);
     }
     setIsChecking(false);

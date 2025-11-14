@@ -31,9 +31,14 @@ export default function Home() {
             note-taking time.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/summarize">
+            <Link href="/register">
               <Button variant="primary" className="text-lg px-8 py-4">
-                Start Summarizing
+                Get Started
+              </Button>
+            </Link>
+            <Link href="/login">
+              <Button variant="secondary" className="text-lg px-8 py-4">
+                Login
               </Button>
             </Link>
           </div>
@@ -204,12 +209,12 @@ export default function Home() {
           <p className="text-xl mb-8 text-blue-100">
             Transform your audio content into actionable insights today
           </p>
-          <Link href="/summarize">
+          <Link href="/register">
             <Button
               variant="secondary"
               className="bg-white text-blue-600 hover:bg-gray-100 text-lg px-8 py-4"
             >
-              Start Summarizing Now
+              Get Started Now
             </Button>
           </Link>
         </div>

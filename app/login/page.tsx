@@ -12,7 +12,7 @@ import { LogIn } from "lucide-react";
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams?.get("redirect") || "/summarize";
+  const redirect = searchParams?.get("redirect") || "/dashboard";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

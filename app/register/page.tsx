@@ -12,7 +12,7 @@ import { UserPlus } from "lucide-react";
 export default function RegisterPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams?.get("redirect") || "/summarize";
+  const redirect = searchParams?.get("redirect") || "/dashboard";
 
   const [formData, setFormData] = useState({
     name: "",
