@@ -1,12 +1,27 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Button from "../components/Button";
 import TextField from "../components/TextField";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 import Link from "next/link";
-import { Upload, FileText, CheckSquare, MessageSquare, ArrowLeft } from "lucide-react";
+import {
+  Upload,
+  FileText,
+  CheckSquare,
+  MessageSquare,
+  Lock,
+} from "lucide-react";
 
-type ProcessingState = "idle" | "uploading" | "transcribing" | "summarizing" | "complete" | "error";
+type ProcessingState =
+  | "idle"
+  | "uploading"
+  | "transcribing"
+  | "summarizing"
+  | "complete"
+  | "error";
 
 interface SummaryData {
   transcript: string;
@@ -17,12 +32,34 @@ interface SummaryData {
 }
 
 export default function SummarizePage() {
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
   const [file, setFile] = useState<File | null>(null);
   const [youtubeUrl, setYoutubeUrl] = useState("");
-  const [processingState, setProcessingState] = useState<ProcessingState>("idle");
+  const [processingState, setProcessingState] =
+    useState<ProcessingState>("idle");
   const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
+
+  useEffect(() => {
+    // Check if user is authenticated (using localStorage for now)
+    // TODO: Replace with actual Supabase auth check
+    const authToken = localStorage.getItem("authToken");
+    const user = localStorage.getItem("user");
+
+    if (authToken && user) {
+      setIsAuthenticated(true);
+    } else {
+      setIsAuthenticated(false);
+      // Redirect to login after a brief delay
+      setTimeout(() => {
+        router.push("/login?redirect=/summarize");
+      }, 100);
+    }
+    setIsChecking(false);
+  }, [router]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -41,7 +78,10 @@ export default function SummarizePage() {
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const droppedFile = e.dataTransfer.files[0];
-      if (droppedFile.type.startsWith("audio/") || droppedFile.name.match(/\.(mp3|wav|m4a|ogg)$/i)) {
+      if (
+        droppedFile.type.startsWith("audio/") ||
+        droppedFile.name.match(/\.(mp3|wav|m4a|ogg)$/i)
+      ) {
         setFile(droppedFile);
         setYoutubeUrl("");
         setError(null);
@@ -88,8 +128,10 @@ export default function SummarizePage() {
 
       // Mock data for UI preview
       setSummaryData({
-        transcript: "This is a sample transcript. In a real implementation, this would contain the actual transcribed text from the audio file or YouTube video.",
-        summary: "This is a sample summary of the audio content. It provides a concise overview of the main topics discussed.",
+        transcript:
+          "This is a sample transcript. In a real implementation, this would contain the actual transcribed text from the audio file or YouTube video.",
+        summary:
+          "This is a sample summary of the audio content. It provides a concise overview of the main topics discussed.",
         bulletPoints: [
           "Key point one: Important information about the topic",
           "Key point two: Another significant detail mentioned",
@@ -118,24 +160,65 @@ export default function SummarizePage() {
     setError(null);
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        {/* Navigation */}
-        <div className="mb-6">
-          <Link href="/" className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-2">
-            <ArrowLeft className="w-4 h-4" />
-            Back to Home
-          </Link>
+  // Show loading state while checking authentication
+  if (isChecking) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+          <p className="text-gray-600">Checking authentication...</p>
         </div>
+      </div>
+    );
+  }
 
+  // Show login required message if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col">
+        <Header />
+        <div className="flex-1 flex items-center justify-center px-4 py-12">
+          <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
+            <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-8 h-8 text-yellow-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Login Required
+            </h1>
+            <p className="text-gray-600 mb-6">
+              You need to be logged in to use the audio summarizer feature.
+            </p>
+            <div className="space-y-3">
+              <Link href="/login?redirect=/summarize" className="block">
+                <Button variant="primary" className="w-full">
+                  Go to Login
+                </Button>
+              </Link>
+              <Link href="/register?redirect=/summarize" className="block">
+                <Button variant="secondary" className="w-full">
+                  Create Account
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col">
+      <Header />
+      <div className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
             Audio Summarizer AI
           </h1>
           <p className="text-lg text-gray-600">
-            Upload audio files or paste YouTube links to get AI-powered transcripts, summaries, and action items
+            Upload audio files or paste YouTube links to get AI-powered
+            transcripts, summaries, and action items
           </p>
         </div>
 
@@ -170,7 +253,10 @@ export default function SummarizePage() {
               >
                 <Upload className="w-12 h-12 text-gray-400 mb-4" />
                 <p className="text-gray-600 mb-2">
-                  <span className="text-blue-600 font-medium">Click to upload</span> or drag and drop
+                  <span className="text-blue-600 font-medium">
+                    Click to upload
+                  </span>{" "}
+                  or drag and drop
                 </p>
                 <p className="text-sm text-gray-500">
                   MP3, WAV, M4A, OGG (max 100MB)
@@ -221,8 +307,14 @@ export default function SummarizePage() {
           <div className="flex gap-3">
             <Button
               onClick={handleSubmit}
-              disabled={processingState !== "idle" && processingState !== "error"}
-              isLoading={processingState === "uploading" || processingState === "transcribing" || processingState === "summarizing"}
+              disabled={
+                processingState !== "idle" && processingState !== "error"
+              }
+              isLoading={
+                processingState === "uploading" ||
+                processingState === "transcribing" ||
+                processingState === "summarizing"
+              }
               className="flex-1"
             >
               {processingState === "idle" && "Process Audio"}
@@ -233,10 +325,7 @@ export default function SummarizePage() {
               {processingState === "error" && "Try Again"}
             </Button>
             {(file || youtubeUrl || summaryData) && (
-              <Button
-                onClick={handleReset}
-                variant="secondary"
-              >
+              <Button onClick={handleReset} variant="secondary">
                 Reset
               </Button>
             )}
@@ -252,10 +341,13 @@ export default function SummarizePage() {
                 <FileText className="w-6 h-6 text-blue-600" />
                 Summary
               </h2>
-              <p className="text-gray-700 leading-relaxed">{summaryData.summary}</p>
+              <p className="text-gray-700 leading-relaxed">
+                {summaryData.summary}
+              </p>
               {summaryData.duration && (
                 <p className="text-sm text-gray-500 mt-3">
-                  Duration: {Math.floor(summaryData.duration / 60)}:{(summaryData.duration % 60).toString().padStart(2, "0")}
+                  Duration: {Math.floor(summaryData.duration / 60)}:
+                  {(summaryData.duration % 60).toString().padStart(2, "0")}
                 </p>
               )}
             </div>
@@ -308,18 +400,23 @@ export default function SummarizePage() {
         )}
 
         {/* Processing Indicator */}
-        {processingState !== "idle" && processingState !== "complete" && processingState !== "error" && (
-          <div className="bg-white rounded-xl shadow-lg p-6 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
-            <p className="text-gray-600">
-              {processingState === "uploading" && "Uploading your audio file..."}
-              {processingState === "transcribing" && "Transcribing audio to text..."}
-              {processingState === "summarizing" && "Generating AI summary..."}
-            </p>
-          </div>
-        )}
+        {processingState !== "idle" &&
+          processingState !== "complete" &&
+          processingState !== "error" && (
+            <div className="bg-white rounded-xl shadow-lg p-6 text-center">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+              <p className="text-gray-600">
+                {processingState === "uploading" &&
+                  "Uploading your audio file..."}
+                {processingState === "transcribing" &&
+                  "Transcribing audio to text..."}
+                {processingState === "summarizing" &&
+                  "Generating AI summary..."}
+              </p>
+            </div>
+          )}
       </div>
+      <Footer />
     </div>
   );
 }
-

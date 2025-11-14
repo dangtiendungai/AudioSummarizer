@@ -2,22 +2,21 @@
 
 import Link from "next/link";
 import Button from "./components/Button";
-import { Music, FileText, CheckSquare, MessageSquare, Zap, Lightbulb } from "lucide-react";
+import Header from "./components/Header";
+import Footer from "./components/Footer";
+import {
+  Music,
+  FileText,
+  CheckSquare,
+  MessageSquare,
+  Zap,
+  Lightbulb,
+} from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Navigation */}
-      <nav className="container mx-auto px-4 py-6 max-w-7xl">
-        <div className="flex items-center justify-between">
-          <div className="text-2xl font-bold text-gray-900">
-            Audio Summarizer AI
-          </div>
-          <Link href="/summarize">
-            <Button variant="primary">Get Started</Button>
-          </Link>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col">
+      <Header />
 
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-20 max-w-7xl">
@@ -37,15 +36,12 @@ export default function Home() {
                 Start Summarizing
               </Button>
             </Link>
-            <Button variant="secondary" className="text-lg px-8 py-4">
-              Watch Demo
-            </Button>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="container mx-auto px-4 py-20 max-w-7xl">
+      <section id="features" className="container mx-auto px-4 py-20 max-w-7xl">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-gray-900 mb-4">
             Powerful Features
@@ -143,7 +139,10 @@ export default function Home() {
       </section>
 
       {/* How It Works Section */}
-      <section className="container mx-auto px-4 py-20 max-w-7xl">
+      <section
+        id="how-it-works"
+        className="container mx-auto px-4 py-20 max-w-7xl"
+      >
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-gray-900 mb-4">
             How It Works
@@ -216,17 +215,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="container mx-auto px-4 py-12 max-w-7xl border-t border-gray-200">
-        <div className="text-center text-gray-600">
-          <p className="mb-2">
-            © 2024 Audio Summarizer AI. All rights reserved.
-          </p>
-          <p className="text-sm">
-            Powered by OpenAI Whisper and advanced LLM technology
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
