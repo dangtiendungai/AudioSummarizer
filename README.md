@@ -8,7 +8,7 @@ A Next.js application that transcribes audio files and YouTube videos, then gene
 - 📝 **AI Summarization**: Generates concise summaries, bullet-point highlights, and action items using OpenAI
 - 💬 **RAG Chat**: Chat with your transcripts using Retrieval Augmented Generation
 - 🔐 **Authentication**: Secure user authentication with Supabase
-- 📊 **Dashboard**: Track your summaries and transcripts
+- 📊 **History & Transcripts**: Completed runs are saved automatically so you can revisit summaries, key points, and full transcripts whenever you like
 
 ## Getting Started
 
@@ -77,10 +77,41 @@ A Next.js application that transcribes audio files and YouTube videos, then gene
 
 - **Framework**: Next.js 16 (App Router)
 - **Styling**: Tailwind CSS 4
-- **Authentication**: Supabase Auth
-- **AI**: OpenAI (Whisper + GPT-4.1 mini)
+- **Authentication**: Supabase Auth with row-level security
+- **AI**: OpenAI (Whisper + GPT-4o-mini-transcribe + GPT-4.1 mini)
 - **Icons**: Lucide React
 - **Font**: Sarala (Google Fonts)
+
+### Database schema (Supabase)
+
+Create the `summaries` table to store transcripts and generated insights:
+
+```sql
+create table if not exists public.summaries (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid(),
+  title text,
+  source_type text,
+  duration numeric,
+  transcript text,
+  summary text,
+  bullet_points jsonb,
+  action_items jsonb,
+  created_at timestamptz not null default now()
+);
+
+alter table public.summaries enable row level security;
+
+create policy "Users can insert their summaries"
+  on public.summaries for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can view their summaries"
+  on public.summaries for select
+  using (auth.uid() = user_id);
+```
+
+Run the SQL above from the Supabase SQL editor. Feel free to extend the schema with additional metadata or storage tables as your product grows.
 
 ## Learn More
 

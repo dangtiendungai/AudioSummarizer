@@ -1,76 +1,97 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import Button from "../../components/Button";
 import TextField from "../../components/TextField";
-import { FileText, Search, Download, Eye, Calendar, Clock } from "lucide-react";
+import {
+  FileText,
+  Search,
+  Download,
+  Eye,
+  Calendar,
+  Clock,
+  Clipboard,
+} from "lucide-react";
+import { createClient } from "../../../lib/supabase/client";
+import Link from "next/link";
 
-interface Transcript {
+interface TranscriptRow {
   id: string;
-  title: string;
-  type: "audio" | "youtube";
-  duration: number;
-  createdAt: string;
-  wordCount: number;
-  preview: string;
+  title: string | null;
+  source_type: "audio" | "youtube" | null;
+  duration: number | null;
+  created_at: string;
+  transcript: string | null;
 }
 
 export default function TranscriptsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "audio" | "youtube">("all");
+  const [items, setItems] = useState<TranscriptRow[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [activeTranscript, setActiveTranscript] =
+    useState<TranscriptRow | null>(null);
+  const [copyMessage, setCopyMessage] = useState<string | null>(null);
 
-  // Mock data - replace with actual API call
-  const transcripts: Transcript[] = [
-    {
-      id: "1",
-      title: "Team Meeting - Q4 Planning",
-      type: "audio",
-      duration: 3600,
-      createdAt: "2025-01-15T10:30:00Z",
-      wordCount: 5234,
-      preview:
-        "Good morning everyone. Let's start today's meeting by reviewing our Q4 objectives. As you all know, we have ambitious goals this quarter...",
-    },
-    {
-      id: "2",
-      title: "YouTube Video: AI Trends 2025",
-      type: "youtube",
-      duration: 1800,
-      createdAt: "2025-01-14T14:20:00Z",
-      wordCount: 3120,
-      preview:
-        "Welcome to today's discussion on AI trends for 2025. We'll be covering the latest developments in machine learning, natural language processing...",
-    },
-    {
-      id: "3",
-      title: "Client Call Recording",
-      type: "audio",
-      duration: 2400,
-      createdAt: "2025-01-13T09:15:00Z",
-      wordCount: 4567,
-      preview:
-        "Thank you for taking the time to meet with us today. We're excited to show you our latest product features and discuss how they can benefit your organization...",
-    },
-    {
-      id: "4",
-      title: "Podcast Episode: Tech Talk",
-      type: "audio",
-      duration: 4200,
-      createdAt: "2025-01-12T16:45:00Z",
-      wordCount: 6789,
-      preview:
-        "In today's episode, we're diving deep into the world of software development. Our guest is a renowned expert in cloud computing and microservices architecture...",
-    },
-  ];
+  useEffect(() => {
+    let isMounted = true;
 
-  const filteredTranscripts = transcripts.filter((transcript) => {
-    const matchesSearch =
-      transcript.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transcript.preview.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = filter === "all" || transcript.type === filter;
-    return matchesSearch && matchesFilter;
-  });
+    const fetchTranscripts = async () => {
+      setIsLoading(true);
+      setFetchError(null);
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("summaries")
+          .select("id,title,source_type,duration,created_at,transcript")
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          throw error;
+        }
+
+        if (isMounted) {
+          setItems(data ?? []);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setFetchError(
+            err instanceof Error
+              ? err.message
+              : "Failed to load your transcripts."
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchTranscripts().catch(() => {
+      /* handled */
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const filteredTranscripts = useMemo(() => {
+    return items.filter((transcript) => {
+      const title = (transcript.title || "Untitled Recording").toLowerCase();
+      const preview = (transcript.transcript || "").toLowerCase();
+      const matchesSearch =
+        title.includes(searchQuery.toLowerCase()) ||
+        preview.includes(searchQuery.toLowerCase());
+      const matchesFilter =
+        filter === "all" ||
+        transcript.source_type === filter ||
+        (!transcript.source_type && filter === "audio");
+      return matchesSearch && matchesFilter;
+    });
+  }, [items, searchQuery, filter]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -81,7 +102,10 @@ export default function TranscriptsPage() {
     });
   };
 
-  const formatDuration = (seconds: number) => {
+  const formatDuration = (seconds?: number | null) => {
+    if (!seconds || seconds <= 0) {
+      return "—";
+    }
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     if (hours > 0) {
@@ -90,9 +114,42 @@ export default function TranscriptsPage() {
     return `${minutes}m`;
   };
 
+  const getWordCount = (text?: string | null) => {
+    if (!text) return 0;
+    return text.trim().split(/\s+/).length;
+  };
+
+  const getPreview = (text?: string | null) => {
+    if (!text) return "No transcript available.";
+    return text.length > 320 ? `${text.slice(0, 320)}…` : text;
+  };
+
+  const handleDownload = (item: TranscriptRow) => {
+    const blob = new Blob([item.transcript || "No transcript available."], {
+      type: "text/plain",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${(item.title || "transcript").replace(/\s+/g, "-")}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleCopy = async (item: TranscriptRow) => {
+    if (!item.transcript) return;
+    try {
+      await navigator.clipboard.writeText(item.transcript);
+      setCopyMessage("Transcript copied to clipboard.");
+      setTimeout(() => setCopyMessage(null), 2500);
+    } catch {
+      setCopyMessage("Unable to copy transcript.");
+      setTimeout(() => setCopyMessage(null), 2500);
+    }
+  };
+
   return (
     <div>
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-2">Transcripts</h1>
         <p className="text-lg text-gray-600">
@@ -100,7 +157,6 @@ export default function TranscriptsPage() {
         </p>
       </div>
 
-      {/* Search and Filter */}
       <div className="bg-white rounded-xl shadow-lg p-6 mb-6 border border-gray-200">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
@@ -134,68 +190,109 @@ export default function TranscriptsPage() {
             </Button>
           </div>
         </div>
+        {fetchError && (
+          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {fetchError}
+          </div>
+        )}
+        {copyMessage && (
+          <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-700">
+            {copyMessage}
+          </div>
+        )}
       </div>
 
-      {/* Transcripts Grid */}
-      {filteredTranscripts.length > 0 ? (
+      {isLoading ? (
         <div className="grid md:grid-cols-2 gap-6">
-          {filteredTranscripts.map((transcript) => (
+          {Array.from({ length: 4 }).map((_, idx) => (
             <div
-              key={transcript.id}
-              className="bg-white rounded-xl shadow-lg p-6 border border-gray-200 hover:shadow-xl transition-shadow flex flex-col"
+              key={idx}
+              className="rounded-xl bg-white p-6 shadow-lg border border-gray-200 animate-pulse"
             >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-lg font-bold text-gray-900">
-                      {transcript.title}
-                    </h3>
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${
-                        transcript.type === "audio"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-purple-100 text-purple-700"
-                      }`}
-                    >
-                      {transcript.type === "audio" ? "Audio" : "YouTube"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      <span>{formatDuration(transcript.duration)}</span>
+              <div className="h-4 w-1/2 bg-gray-200 rounded mb-3" />
+              <div className="h-3 w-full bg-gray-100 rounded mb-2" />
+              <div className="h-3 w-2/3 bg-gray-100 rounded" />
+            </div>
+          ))}
+        </div>
+      ) : filteredTranscripts.length > 0 ? (
+        <div className="grid md:grid-cols-2 gap-6">
+          {filteredTranscripts.map((transcript) => {
+            const words = getWordCount(transcript.transcript);
+            return (
+              <div
+                key={transcript.id}
+                className="bg-white rounded-xl shadow-lg p-6 border border-gray-200 hover:shadow-xl transition-shadow flex flex-col"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="text-lg font-bold text-gray-900">
+                        {transcript.title || "Untitled Recording"}
+                      </h3>
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-medium ${
+                          transcript.source_type === "youtube"
+                            ? "bg-purple-100 text-purple-700"
+                            : "bg-blue-100 text-blue-700"
+                        }`}
+                      >
+                        {transcript.source_type === "youtube"
+                          ? "YouTube"
+                          : "Audio"}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <FileText className="w-4 h-4" />
-                      <span>{transcript.wordCount.toLocaleString()} words</span>
+                    <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        <span>{formatDuration(transcript.duration)}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <FileText className="w-4 h-4" />
+                        <span>
+                          {words.toLocaleString()}{" "}
+                          {words === 1 ? "word" : "words"}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-1 text-sm text-gray-500 mb-4">
-                    <Calendar className="w-4 h-4" />
-                    <span>{formatDate(transcript.createdAt)}</span>
+                    <div className="flex items-center gap-1 text-sm text-gray-500 mb-4">
+                      <Calendar className="w-4 h-4" />
+                      <span>{formatDate(transcript.created_at)}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <p className="text-gray-600 text-sm mb-4 line-clamp-3 flex-1">
-                {transcript.preview}
-              </p>
-              <div className="flex gap-2 pt-4 border-t border-gray-200">
-                <Link href={`/transcripts/${transcript.id}`} className="flex-1">
+                <p className="text-gray-600 text-sm mb-4 line-clamp-3 flex-1">
+                  {getPreview(transcript.transcript)}
+                </p>
+                <div className="flex gap-2 pt-4 border-t border-gray-200">
                   <Button
                     variant="primary"
-                    className="w-full flex items-center justify-center gap-2"
+                    className="flex-1 flex items-center justify-center gap-2"
+                    onClick={() => setActiveTranscript(transcript)}
                   >
                     <Eye className="w-4 h-4" />
                     View Full
                   </Button>
-                </Link>
-                <Button variant="secondary" className="flex items-center gap-2">
-                  <Download className="w-4 h-4" />
-                  Download
-                </Button>
+                  <Button
+                    variant="secondary"
+                    className="flex items-center gap-2"
+                    onClick={() => handleCopy(transcript)}
+                  >
+                    <Clipboard className="w-4 h-4" />
+                    Copy
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    className="flex items-center gap-2"
+                    onClick={() => handleDownload(transcript)}
+                  >
+                    <Download className="w-4 h-4" />
+                    Download
+                  </Button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow-lg p-12 text-center border border-gray-200">
@@ -213,6 +310,32 @@ export default function TranscriptsPage() {
               <Button variant="primary">Create Your First Transcript</Button>
             </Link>
           )}
+        </div>
+      )}
+
+      {activeTranscript && (
+        <div className="mt-8 bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-2xl font-bold text-gray-900">
+                {activeTranscript.title || "Transcript"}
+              </h3>
+              <p className="text-sm text-gray-500">
+                Captured on {formatDate(activeTranscript.created_at)}
+              </p>
+            </div>
+            <Button
+              variant="secondary"
+              onClick={() => setActiveTranscript(null)}
+            >
+              Close
+            </Button>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
+            <p className="whitespace-pre-wrap text-gray-800 leading-relaxed">
+              {activeTranscript.transcript || "No transcript available."}
+            </p>
+          </div>
         </div>
       )}
     </div>

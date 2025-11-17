@@ -13,6 +13,7 @@ import {
   Link2,
   Music,
 } from "lucide-react";
+import { createClient } from "../../../lib/supabase/client";
 
 type ProcessingState =
   | "idle"
@@ -35,15 +36,27 @@ interface SummaryData {
   actionItems: string[];
 }
 
+interface PersistedRecord extends SummaryData {
+  transcript: string;
+  sourceType: "audio" | "youtube";
+  duration?: number | null;
+  title?: string;
+}
+
 export default function SummarizePage() {
   const [file, setFile] = useState<File | null>(null);
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [processingState, setProcessingState] =
     useState<ProcessingState>("idle");
-  const [transcriptResult, setTranscriptResult] = useState<TranscriptResult | null>(null);
+  const [transcriptResult, setTranscriptResult] =
+    useState<TranscriptResult | null>(null);
   const [summaryResult, setSummaryResult] = useState<SummaryData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<
+    "idle" | "saving" | "success" | "error"
+  >("idle");
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -97,6 +110,53 @@ export default function SummarizePage() {
     }
   };
 
+  const persistSummary = useCallback(async (record: PersistedRecord) => {
+    setSaveStatus("saving");
+    setSaveMessage("Saving to history...");
+    try {
+      let supabase;
+      try {
+        supabase = createClient();
+      } catch (clientError) {
+        setSaveStatus("error");
+        setSaveMessage(
+          clientError instanceof Error
+            ? clientError.message
+            : "Supabase is not configured. Skipping save."
+        );
+        return;
+      }
+
+      const { error: insertError } = await supabase.from("summaries").insert({
+        title:
+          record.title ||
+          (record.sourceType === "audio"
+            ? "Audio Recording"
+            : "YouTube Recording"),
+        source_type: record.sourceType,
+        duration: record.duration ?? null,
+        transcript: record.transcript,
+        summary: record.summary,
+        bullet_points: record.bulletPoints,
+        action_items: record.actionItems,
+      });
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      setSaveStatus("success");
+      setSaveMessage("Saved to history.");
+    } catch (err) {
+      setSaveStatus("error");
+      setSaveMessage(
+        err instanceof Error
+          ? err.message
+          : "Failed to save summary to history."
+      );
+    }
+  }, []);
+
   const handleSubmit = async () => {
     if (!file && !youtubeUrl.trim()) {
       setError("Please upload an audio file or enter a YouTube URL");
@@ -106,6 +166,8 @@ export default function SummarizePage() {
     setError(null);
     setSummaryResult(null);
     setTranscriptResult(null);
+    setSaveStatus("idle");
+    setSaveMessage(null);
 
     setProcessingState(file ? "uploading" : "transcribing");
 
@@ -130,7 +192,8 @@ export default function SummarizePage() {
         );
       }
 
-      const transcriptPayload = (await transcriptionResponse.json()) as TranscriptResult;
+      const transcriptPayload =
+        (await transcriptionResponse.json()) as TranscriptResult;
       setTranscriptResult(transcriptPayload);
 
       setProcessingState("summarizing");
@@ -158,6 +221,19 @@ export default function SummarizePage() {
       const summaryPayload = (await summaryResponse.json()) as SummaryData;
       setSummaryResult(summaryPayload);
       setProcessingState("complete");
+
+      await persistSummary({
+        ...summaryPayload,
+        transcript: transcriptPayload.transcript,
+        sourceType: transcriptPayload.sourceType,
+        duration: transcriptPayload.duration,
+        title:
+          transcriptPayload.title ||
+          (file?.name ??
+            (transcriptPayload.sourceType === "youtube"
+              ? "YouTube Recording"
+              : "Audio Recording")),
+      });
     } catch (err) {
       setProcessingState("error");
       setSummaryResult(null);
@@ -176,6 +252,8 @@ export default function SummarizePage() {
     setTranscriptResult(null);
     setProcessingState("idle");
     setError(null);
+    setSaveStatus("idle");
+    setSaveMessage(null);
   };
 
   return (
@@ -297,6 +375,20 @@ export default function SummarizePage() {
             </Button>
           )}
         </div>
+
+        {saveMessage && (
+          <div
+            className={`mt-4 rounded-lg border p-3 text-sm ${
+              saveStatus === "success"
+                ? "border-green-200 bg-green-50 text-green-700"
+                : saveStatus === "error"
+                ? "border-red-200 bg-red-50 text-red-700"
+                : "border-blue-200 bg-blue-50 text-blue-700"
+            }`}
+          >
+            {saveMessage}
+          </div>
+        )}
       </div>
 
       {/* Recording Details */}
@@ -412,7 +504,8 @@ export default function SummarizePage() {
           <div className="bg-white rounded-xl shadow-lg p-6 text-center border border-gray-200">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
             <p className="text-gray-600">
-              {processingState === "uploading" && "Uploading and transcribing your audio..."}
+              {processingState === "uploading" &&
+                "Uploading and transcribing your audio..."}
               {processingState === "transcribing" &&
                 "Fetching transcript for the provided link..."}
               {processingState === "summarizing" && "Generating AI summary..."}
