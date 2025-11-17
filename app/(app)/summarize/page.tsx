@@ -3,7 +3,16 @@
 import { useState, useCallback } from "react";
 import Button from "../../components/Button";
 import TextField from "../../components/TextField";
-import { Upload, FileText, CheckSquare, MessageSquare } from "lucide-react";
+import {
+  Upload,
+  FileText,
+  CheckSquare,
+  MessageSquare,
+  Info,
+  Clock,
+  Link2,
+  Music,
+} from "lucide-react";
 
 type ProcessingState =
   | "idle"
@@ -13,12 +22,17 @@ type ProcessingState =
   | "complete"
   | "error";
 
-interface SummaryData {
+interface TranscriptResult {
   transcript: string;
+  sourceType: "audio" | "youtube";
+  duration?: number | null;
+  title?: string;
+}
+
+interface SummaryData {
   summary: string;
   bulletPoints: string[];
   actionItems: string[];
-  duration?: number;
 }
 
 export default function SummarizePage() {
@@ -26,7 +40,8 @@ export default function SummarizePage() {
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [processingState, setProcessingState] =
     useState<ProcessingState>("idle");
-  const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
+  const [transcriptResult, setTranscriptResult] = useState<TranscriptResult | null>(null);
+  const [summaryResult, setSummaryResult] = useState<SummaryData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
 
@@ -62,7 +77,13 @@ export default function SummarizePage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+      const maxBytes = 100 * 1024 * 1024;
+      if (selectedFile.size > maxBytes) {
+        setError("Please select a file smaller than 100MB.");
+        return;
+      }
+      setFile(selectedFile);
       setYoutubeUrl("");
       setError(null);
     }
@@ -83,48 +104,76 @@ export default function SummarizePage() {
     }
 
     setError(null);
-    setProcessingState("uploading");
-    setSummaryData(null);
+    setSummaryResult(null);
+    setTranscriptResult(null);
+
+    setProcessingState(file ? "uploading" : "transcribing");
 
     try {
-      // TODO: Replace with actual API calls
-      // For now, simulate processing
-      setProcessingState("transcribing");
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const formData = new FormData();
+      if (file) {
+        formData.append("file", file);
+      }
+      if (youtubeUrl.trim()) {
+        formData.append("youtubeUrl", youtubeUrl.trim());
+      }
 
-      setProcessingState("summarizing");
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Mock data for UI preview
-      setSummaryData({
-        transcript:
-          "This is a sample transcript. In a real implementation, this would contain the actual transcribed text from the audio file or YouTube video.",
-        summary:
-          "This is a sample summary of the audio content. It provides a concise overview of the main topics discussed.",
-        bulletPoints: [
-          "Key point one: Important information about the topic",
-          "Key point two: Another significant detail mentioned",
-          "Key point three: Additional insights from the discussion",
-        ],
-        actionItems: [
-          "Follow up on the discussed proposal",
-          "Schedule a meeting with the team",
-          "Review the documents mentioned",
-        ],
-        duration: 120,
+      const transcriptionResponse = await fetch("/api/transcribe", {
+        method: "POST",
+        body: formData,
       });
 
+      if (!transcriptionResponse.ok) {
+        const payload = await transcriptionResponse.json().catch(() => ({}));
+        throw new Error(
+          payload.error || "Failed to transcribe the provided content."
+        );
+      }
+
+      const transcriptPayload = (await transcriptionResponse.json()) as TranscriptResult;
+      setTranscriptResult(transcriptPayload);
+
+      setProcessingState("summarizing");
+
+      const summaryResponse = await fetch("/api/summarize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          transcript: transcriptPayload.transcript,
+          duration: transcriptPayload.duration,
+          title: transcriptPayload.title,
+          sourceType: transcriptPayload.sourceType,
+        }),
+      });
+
+      if (!summaryResponse.ok) {
+        const payload = await summaryResponse.json().catch(() => ({}));
+        throw new Error(
+          payload.error || "Failed to generate summary. Please try again."
+        );
+      }
+
+      const summaryPayload = (await summaryResponse.json()) as SummaryData;
+      setSummaryResult(summaryPayload);
       setProcessingState("complete");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
       setProcessingState("error");
+      setSummaryResult(null);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again."
+      );
     }
   };
 
   const handleReset = () => {
     setFile(null);
     setYoutubeUrl("");
-    setSummaryData(null);
+    setSummaryResult(null);
+    setTranscriptResult(null);
     setProcessingState("idle");
     setError(null);
   };
@@ -242,7 +291,7 @@ export default function SummarizePage() {
             {processingState === "complete" && "Process Complete"}
             {processingState === "error" && "Try Again"}
           </Button>
-          {(file || youtubeUrl || summaryData) && (
+          {(file || youtubeUrl || summaryResult || transcriptResult) && (
             <Button onClick={handleReset} variant="secondary">
               Reset
             </Button>
@@ -250,57 +299,96 @@ export default function SummarizePage() {
         </div>
       </div>
 
-      {/* Results Section */}
-      {summaryData && (
+      {/* Recording Details */}
+      {transcriptResult && (
         <div className="space-y-6">
-          {/* Summary Card */}
           <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
             <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <FileText className="w-6 h-6 text-blue-600" />
-              Summary
+              <Info className="w-6 h-6 text-blue-600" />
+              Recording Details
             </h2>
-            <p className="text-gray-700 leading-relaxed">
-              {summaryData.summary}
-            </p>
-            {summaryData.duration && (
-              <p className="text-sm text-gray-500 mt-3">
-                Duration: {Math.floor(summaryData.duration / 60)}:
-                {(summaryData.duration % 60).toString().padStart(2, "0")}
-              </p>
-            )}
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="flex items-start gap-3">
+                <Music className="w-5 h-5 text-blue-500 mt-1" />
+                <div>
+                  <p className="text-sm text-gray-500">Title</p>
+                  <p className="font-medium text-gray-900">
+                    {transcriptResult.title || "Untitled Recording"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Link2 className="w-5 h-5 text-purple-500 mt-1" />
+                <div>
+                  <p className="text-sm text-gray-500">Source</p>
+                  <p className="font-medium text-gray-900 capitalize">
+                    {transcriptResult.sourceType}
+                  </p>
+                </div>
+              </div>
+              {typeof transcriptResult.duration === "number" && (
+                <div className="flex items-start gap-3">
+                  <Clock className="w-5 h-5 text-emerald-500 mt-1" />
+                  <div>
+                    <p className="text-sm text-gray-500">Duration</p>
+                    <p className="font-medium text-gray-900">
+                      {Math.floor(transcriptResult.duration / 60)}:
+                      {(transcriptResult.duration % 60)
+                        .toString()
+                        .padStart(2, "0")}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Bullet Points Card */}
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <CheckSquare className="w-6 h-6 text-purple-600" />
-              Key Points
-            </h2>
-            <ul className="space-y-2">
-              {summaryData.bulletPoints.map((point, index) => (
-                <li key={index} className="flex items-start gap-3">
-                  <span className="text-purple-600 mt-1">•</span>
-                  <span className="text-gray-700 flex-1">{point}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {summaryResult && (
+            <>
+              {/* Summary Card */}
+              <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <FileText className="w-6 h-6 text-blue-600" />
+                  Summary
+                </h2>
+                <p className="text-gray-700 leading-relaxed">
+                  {summaryResult.summary}
+                </p>
+              </div>
 
-          {/* Action Items Card */}
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <CheckSquare className="w-6 h-6 text-green-600" />
-              Action Items
-            </h2>
-            <ul className="space-y-2">
-              {summaryData.actionItems.map((item, index) => (
-                <li key={index} className="flex items-start gap-3">
-                  <span className="text-green-600 mt-1">✓</span>
-                  <span className="text-gray-700 flex-1">{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+              {/* Bullet Points Card */}
+              <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <CheckSquare className="w-6 h-6 text-purple-600" />
+                  Key Points
+                </h2>
+                <ul className="space-y-2">
+                  {summaryResult.bulletPoints.map((point, index) => (
+                    <li key={index} className="flex items-start gap-3">
+                      <span className="text-purple-600 mt-1">•</span>
+                      <span className="text-gray-700 flex-1">{point}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Action Items Card */}
+              <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <CheckSquare className="w-6 h-6 text-green-600" />
+                  Action Items
+                </h2>
+                <ul className="space-y-2">
+                  {summaryResult.actionItems.map((item, index) => (
+                    <li key={index} className="flex items-start gap-3">
+                      <span className="text-green-600 mt-1">✓</span>
+                      <span className="text-gray-700 flex-1">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          )}
 
           {/* Transcript Card */}
           <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
@@ -310,7 +398,7 @@ export default function SummarizePage() {
             </h2>
             <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
               <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                {summaryData.transcript}
+                {transcriptResult.transcript}
               </p>
             </div>
           </div>
@@ -324,14 +412,21 @@ export default function SummarizePage() {
           <div className="bg-white rounded-xl shadow-lg p-6 text-center border border-gray-200">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
             <p className="text-gray-600">
-              {processingState === "uploading" &&
-                "Uploading your audio file..."}
+              {processingState === "uploading" && "Uploading and transcribing your audio..."}
               {processingState === "transcribing" &&
-                "Transcribing audio to text..."}
+                "Fetching transcript for the provided link..."}
               {processingState === "summarizing" && "Generating AI summary..."}
             </p>
           </div>
         )}
+
+      {processingState === "error" && !error && (
+        <div className="bg-white rounded-xl shadow-lg p-6 text-center border border-red-200">
+          <p className="text-red-600">
+            Something went wrong while processing your request.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

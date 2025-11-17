@@ -4,8 +4,8 @@ A Next.js application that transcribes audio files and YouTube videos, then gene
 
 ## Features
 
-- 🎤 **Audio Transcription**: Upload MP3/WAV files or paste YouTube links
-- 📝 **AI Summarization**: Generate short summaries, bullet-point notes, and action items
+- 🎤 **Audio & YouTube Transcription**: Upload MP3/WAV files (up to 100 MB) or paste a YouTube link and get an instant transcript
+- 📝 **AI Summarization**: Generates concise summaries, bullet-point highlights, and action items using OpenAI
 - 💬 **RAG Chat**: Chat with your transcripts using Retrieval Augmented Generation
 - 🔐 **Authentication**: Secure user authentication with Supabase
 - 📊 **Dashboard**: Track your summaries and transcripts
@@ -22,30 +22,36 @@ A Next.js application that transcribes audio files and YouTube videos, then gene
 1. **Clone the repository** (or navigate to the project directory)
 
 2. **Install dependencies**:
+
    ```bash
    npm install
    ```
 
 3. **Set up environment variables**:
-   
+
    Create a `.env.local` file in the root directory:
+
    ```bash
    cp .env.example .env.local
    ```
-   
-   Then edit `.env.local` and add your Supabase credentials:
+
+   Then edit `.env.local` and add your Supabase credentials and OpenAI key:
+
    ```env
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   OPENAI_API_KEY=your_openai_api_key
    ```
-   
+
    To get these values:
+
    1. Go to [Supabase Dashboard](https://app.supabase.com)
    2. Create a new project or select an existing one
    3. Go to **Settings** → **API**
    4. Copy the **Project URL** and **anon/public** key
 
 4. **Run the development server**:
+
    ```bash
    npm run dev
    ```
@@ -62,8 +68,9 @@ A Next.js application that transcribes audio files and YouTube videos, then gene
 │   ├── register/
 │   └── forgot-password/
 ├── lib/
+│   ├── openai.ts          # OpenAI client helper
 │   └── supabase/          # Supabase client configuration
-└── middleware.ts          # Next.js middleware for session management
+└── app/api/               # Transcribe & summarize endpoints
 ```
 
 ## Tech Stack
@@ -71,6 +78,7 @@ A Next.js application that transcribes audio files and YouTube videos, then gene
 - **Framework**: Next.js 16 (App Router)
 - **Styling**: Tailwind CSS 4
 - **Authentication**: Supabase Auth
+- **AI**: OpenAI (Whisper + GPT-4.1 mini)
 - **Icons**: Lucide React
 - **Font**: Sarala (Google Fonts)
 
