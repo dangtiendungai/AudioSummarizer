@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import Button from "../../components/Button";
 import TextField from "../../components/TextField";
+import Dialog from "../../components/Dialog";
 import { createClient } from "../../../lib/supabase/client";
 import {
   Mail,
@@ -12,9 +12,9 @@ import {
   Clock,
   ShieldCheck,
   Loader2,
-  CheckCircle,
   AlertCircle,
   Lock,
+  CheckCircle,
 } from "lucide-react";
 
 interface ProfileInfo {
@@ -34,6 +34,13 @@ export default function ProfilePage() {
     "idle" | "saving" | "success" | "error"
   >("idle");
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [resetStatus, setResetStatus] = useState<
+    "idle" | "sending" | "success" | "error"
+  >("idle");
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -61,26 +68,28 @@ export default function ProfilePage() {
         const summariesCount = summaries?.length || 0;
         const totalMinutes = (summaries || []).reduce((acc, item) => {
           const seconds =
-            typeof item.duration === "number" ? item.duration : Number(item.duration);
+            typeof item.duration === "number"
+              ? item.duration
+              : Number(item.duration);
           return acc + (Number.isFinite(seconds) ? seconds : 0);
         }, 0);
 
         if (isMounted) {
-          setProfile({
-            name:
-              (user.user_metadata?.name as string) ||
-              user.email?.split("@")[0] ||
-              "User",
+          const resolvedName =
+            (user.user_metadata?.name as string) ||
+            user.email?.split("@")[0] ||
+            "User";
+
+          const profileData: ProfileInfo = {
+            name: resolvedName,
             email: user.email || "",
             createdAt: user.created_at || "",
             summariesCount,
             totalMinutes: Math.round(totalMinutes / 60),
-          });
-          setNameInput(
-            (user.user_metadata?.name as string) ||
-              user.email?.split("@")[0] ||
-              "User"
-          );
+          };
+
+          setProfile(profileData);
+          setNameInput(resolvedName);
         }
       } catch (err) {
         if (isMounted) {
@@ -143,6 +152,59 @@ export default function ProfilePage() {
       setSaveStatus("error");
       setSaveMessage(
         err instanceof Error ? err.message : "Unable to update profile."
+      );
+    }
+  };
+
+  const openResetDialog = () => {
+    setResetStatus("idle");
+    setResetMessage(null);
+    setNewPassword("");
+    setConfirmPassword("");
+    setIsResetDialogOpen(true);
+  };
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 8) {
+      setResetStatus("error");
+      setResetMessage("Password must be at least 8 characters long.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setResetStatus("error");
+      setResetMessage("Passwords do not match.");
+      return;
+    }
+
+    setResetStatus("sending");
+    setResetMessage("Updating password...");
+
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setResetStatus("success");
+      setResetMessage("Password updated successfully.");
+      setTimeout(() => {
+        setIsResetDialogOpen(false);
+        setResetStatus("idle");
+        setResetMessage(null);
+        setNewPassword("");
+        setConfirmPassword("");
+      }, 800);
+    } catch (err) {
+      setResetStatus("error");
+      setResetMessage(
+        err instanceof Error
+          ? err.message
+          : "Unable to update password. Please try again."
       );
     }
   };
@@ -296,35 +358,84 @@ export default function ProfilePage() {
           </p>
 
           <div className="flex items-start gap-3">
-            <ShieldCheck className="w-5 h-5 text-emerald-600 mt-1" />
+            <ShieldCheck className="shrink-0 w-5 h-5 text-emerald-600 mt-1" />
             <p className="text-sm text-gray-600">
-              Password resets are handled securely via email. We never store
-              your credentials in plaintext.
+              Update your password instantly without leaving the dashboard. Your
+              credentials are encrypted and never stored in plaintext.
             </p>
           </div>
 
-          <Link href="/forgot-password">
-            <Button variant="secondary" className="w-full flex items-center justify-center gap-2">
-              <Lock className="w-4 h-4" />
-              Reset Password
-            </Button>
-          </Link>
-
-          <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 flex items-start gap-3">
-            <CheckCircle className="w-5 h-5 text-blue-600 mt-1" />
-            <div>
-              <p className="text-sm font-semibold text-gray-900">
-                Pro tip
-              </p>
-              <p className="text-sm text-gray-600">
-                Use the same email address to receive transcript exports and
-                password reset links.
-              </p>
-            </div>
-          </div>
+          <Button
+            variant="secondary"
+            className="w-full flex items-center justify-center gap-2"
+            onClick={openResetDialog}
+          >
+            <Lock className="w-4 h-4" />
+            Reset Password
+          </Button>
         </div>
       </div>
+
+      <Dialog
+        open={isResetDialogOpen}
+        onClose={() => setIsResetDialogOpen(false)}
+        title="Update password"
+        description="Choose a strong, unique password. Changing it will sign you out on other devices."
+        icon={<Lock className="w-5 h-5" />}
+      >
+        <form onSubmit={handlePasswordReset} className="space-y-4">
+          <TextField
+            type="password"
+            label="New password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="••••••••"
+            disabled={resetStatus === "sending"}
+          />
+          <TextField
+            type="password"
+            label="Confirm new password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="••••••••"
+            disabled={resetStatus === "sending"}
+          />
+
+          {resetMessage && (
+            <div
+              className={`rounded-lg border p-3 text-sm ${
+                resetStatus === "success"
+                  ? "border-green-200 bg-green-50 text-green-700"
+                  : resetStatus === "error"
+                  ? "border-red-200 bg-red-50 text-red-700"
+                  : "border-blue-200 bg-blue-50 text-blue-700"
+              }`}
+            >
+              {resetMessage}
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button
+              type="submit"
+              variant="primary"
+              isLoading={resetStatus === "sending"}
+              className="flex-1"
+            >
+              Update
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              className="flex-1"
+              onClick={() => setIsResetDialogOpen(false)}
+              disabled={resetStatus === "sending"}
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </Dialog>
     </div>
   );
 }
-
