@@ -127,7 +127,19 @@ export default function SummarizePage() {
         return;
       }
 
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        throw new Error(
+          "You must be logged in to save summaries. Please sign in again."
+        );
+      }
+
       const { error: insertError } = await supabase.from("summaries").insert({
+        user_id: user.id,
         title:
           record.title ||
           (record.sourceType === "audio"
