@@ -12,6 +12,7 @@
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.81.1",
     "lucide-react": "^0.553.0",
+    "music-metadata": "^11.10.1",
     "next": "16.0.3",
     "openai": "^6.9.0",
     "react": "19.2.0",

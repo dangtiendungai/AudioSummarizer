@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { YoutubeTranscript } from "youtube-transcript";
+import { parseBuffer } from "music-metadata";
 import { getOpenAIClient } from "../../../lib/openai";
 
 export const runtime = "nodejs";
@@ -50,10 +51,20 @@ export async function POST(request: Request) {
       }
 
       const arrayBuffer = await file.arrayBuffer();
-      const blob = new Blob([arrayBuffer], {
-        type: file.type || "application/octet-stream",
-      });
-      const preparedFile = new File([blob], file.name || "audio-file", {
+      const buffer = Buffer.from(arrayBuffer);
+
+      let metadataDuration: number | null = null;
+      try {
+        const metadata = await parseBuffer(buffer, file.type || undefined);
+        metadataDuration =
+          typeof metadata.format.duration === "number"
+            ? metadata.format.duration
+            : null;
+      } catch {
+        metadataDuration = null;
+      }
+
+      const preparedFile = new File([buffer], file.name || "audio-file", {
         type: file.type || "application/octet-stream",
       });
 
@@ -71,11 +82,13 @@ export async function POST(request: Request) {
             .segments as Array<{ end?: number }>)
         : [];
 
+      const segmentDuration =
+        segments.length > 0 ? segments[segments.length - 1]?.end ?? null : null;
+
       const duration =
         (transcription as { duration?: number }).duration ??
-        (segments.length > 0
-          ? segments[segments.length - 1]?.end ?? null
-          : null);
+        segmentDuration ??
+        metadataDuration;
 
       return NextResponse.json({
         transcript: transcription.text,
@@ -120,8 +133,10 @@ export async function POST(request: Request) {
         .replace(/\s+/g, " ")
         .trim();
 
-      const duration =
-        transcriptEntries[transcriptEntries.length - 1]?.offset ?? null;
+      const lastEntry = transcriptEntries[transcriptEntries.length - 1];
+      const duration = lastEntry
+        ? (lastEntry.offset ?? 0) + (lastEntry.duration ?? 0)
+        : null;
 
       const title = await fetchYoutubeTitle(youtubeUrl);
 
