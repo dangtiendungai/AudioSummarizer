@@ -61,16 +61,21 @@ export async function POST(request: Request) {
         file: preparedFile,
         model: "gpt-4o-mini-transcribe",
         temperature: 0.2,
-        response_format: "verbose_json",
+        response_format: "json",
       });
 
-      const segments = Array.isArray(transcription.segments)
-        ? transcription.segments
+      const segments = Array.isArray(
+        (transcription as { segments?: Array<{ end?: number }> }).segments
+      )
+        ? ((transcription as { segments?: Array<{ end?: number }> })
+            .segments as Array<{ end?: number }>)
         : [];
 
       const duration =
-        transcription.duration ??
-        (segments.length > 0 ? segments[segments.length - 1]?.end : null);
+        (transcription as { duration?: number }).duration ??
+        (segments.length > 0
+          ? segments[segments.length - 1]?.end ?? null
+          : null);
 
       return NextResponse.json({
         transcript: transcription.text,
