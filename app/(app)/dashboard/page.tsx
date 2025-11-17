@@ -2,20 +2,14 @@
 
 import Link from "next/link";
 import Button from "../../components/Button";
-import {
-  FileText,
-  Upload,
-  History,
-} from "lucide-react";
+import { FileText, Upload, History } from "lucide-react";
 
 export default function DashboardPage() {
   return (
     <div>
       {/* Welcome Section */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">
-          Dashboard
-        </h1>
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">Dashboard</h1>
         <p className="text-lg text-gray-600">
           Manage your audio summaries and transcripts
         </p>
@@ -37,27 +31,31 @@ export default function DashboardPage() {
           </div>
         </Link>
 
-        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer border border-gray-200">
-          <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-            <History className="w-6 h-6 text-purple-600" />
+        <Link href="/history">
+          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer border border-gray-200">
+            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+              <History className="w-6 h-6 text-purple-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">History</h3>
+            <p className="text-sm text-gray-600">
+              View your previous summaries and transcripts
+            </p>
           </div>
-          <h3 className="text-lg font-bold text-gray-900 mb-2">History</h3>
-          <p className="text-sm text-gray-600">
-            View your previous summaries and transcripts
-          </p>
-        </div>
+        </Link>
 
-        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer border border-gray-200">
-          <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-            <FileText className="w-6 h-6 text-green-600" />
+        <Link href="/transcripts">
+          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer border border-gray-200">
+            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+              <FileText className="w-6 h-6 text-green-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">
+              My Transcripts
+            </h3>
+            <p className="text-sm text-gray-600">
+              Browse all your saved transcripts
+            </p>
           </div>
-          <h3 className="text-lg font-bold text-gray-900 mb-2">
-            My Transcripts
-          </h3>
-          <p className="text-sm text-gray-600">
-            Browse all your saved transcripts
-          </p>
-        </div>
+        </Link>
       </div>
 
       {/* Recent Activity */}
@@ -76,4 +74,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
